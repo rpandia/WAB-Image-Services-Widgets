@@ -37,6 +37,7 @@ define([
                 baseClass: 'jimu-widget-ISImageDate-setting',
                 ISLayers: [],
                 bandNames: [],
+                FinalNames: [],
                 requestFlag: true,
                 startup: function () {
                     this.inherited(arguments);
@@ -51,9 +52,10 @@ define([
                     for (var a in this.map.layerIds) {
                         if (this.map.getLayer(this.map.layerIds[a]).type === 'ArcGISImageServiceLayer' || (this.map.getLayer(this.map.layerIds[a]).serviceDataType && this.map.getLayer(this.map.layerIds[a]).serviceDataType.substr(0, 16) === "esriImageService")) {
                             var title = (this.map.getLayer(this.map.layerIds[a])).arcgisProps ? (this.map.getLayer(this.map.layerIds[a])).arcgisProps.title : "";
-                            if((title.charAt(title.length - 1)) !== "_"){//if (!((title.toLowerCase()).includes("_result"))) {
+                            if((title.charAt(title.length - 1)) !== "_"){
                                 this.ISLayers[i] = this.map.getLayer(this.map.layerIds[a]);
                                 while (this.map.itemInfo.itemData.operationalLayers[j] && this.map.itemInfo.itemData.operationalLayers[j].url !== this.ISLayers[i].url) {
+                                    console.log(this.map.itemInfo.itemData.operationalLayers[j]);
                                     j++;
                                 }
                                 if (this.map.itemInfo.itemData.operationalLayers[j] && this.map.itemInfo.itemData.operationalLayers[j].title)

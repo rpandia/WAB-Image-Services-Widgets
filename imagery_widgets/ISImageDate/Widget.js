@@ -25,6 +25,7 @@ define([
     "dojo/_base/array",
     "dojo/date/locale",
     "dojo/html",
+    "dojo/promise/all",
     "esri/request",
     "esri/layers/MosaicRule",
     "esri/graphic"
@@ -40,11 +41,13 @@ define([
                 array,
                 locale,
                 html,
+                all,
                 esriRequest, MosaicRule) {
             var clazz = declare([BaseWidget, _WidgetsInTemplateMixin], {
                 baseClass: 'jimu-widget-ISImageDate',
                 name: 'ISImageDate',
                 requestCount: 0,
+                rstVar: '',
                 primaryLayer: null,
                 postCreate: function () {
                     this.layerInfos = this.config;
@@ -59,6 +62,25 @@ define([
                     }
 
                 },
+                getResults: function (title,layer, point, mosaicRule,dtField) {
+							//console.log("title inside function = "+"  "+title);
+                            var request = this.getSamples(layer, point, mosaicRule,dtField);
+                            request.then(lang.hitch(this, function (result) {
+                            if (result.samples.length > 0) {
+                                var RstprimaryDate = result.samples[0].attributes[dtField];
+                                this.primaryDate = locale.format(new Date(RstprimaryDate), {selector: "date", formatLength: "long"});
+                                //console.log("witout this "+title);
+                                pp = title+" Date : "+this.primaryDate+" <br/>";
+								if((this.rstVar).indexOf(pp) == -1){
+								if((this.rstVar).search(title) == -1){
+                                this.rstVar = this.rstVar+""+title+" Date : "+this.primaryDate+" <br/>";
+                                //console.log("witout this >>>>>"+this.rstVar);
+                                html.set(this.primaryName,this.rstVar);
+                                }else{
+									var left_text = (this.rstVar).indexOf(title+" Date : ");
+									console.log((this.rstVar)+" "+left_text+" "+Rt_text+" pp ="+pp);
+							}}
+								}}));},
                 setPrimaryLayer: function () {
                     /*if (this.map.primaryLayer && this.map.getLayer(this.map.primaryLayer).visible) {
                         this.primaryLayer = this.map.getLayer(this.map.primaryLayer);
@@ -94,42 +116,35 @@ define([
                         }else
                             this.secondaryLayer = null;
                     }*/
-
                     this.clearDateRange();
-                    var currentLayer = "";
-                    var dateFieldName = "--";
-                    var primaryDate = "";
+                    var primaryName = this.primaryName;
+                    var sringVal = '<br/>';
                     for (var a in this.map.layerIds) {
                         if (this.map.getLayer(this.map.layerIds[a]).visible) {
                         if (this.map.getLayer(this.map.layerIds[a]).type === 'ArcGISImageServiceLayer' || (this.map.getLayer(this.map.layerIds[a]).serviceDataType && this.map.getLayer(this.map.layerIds[a]).serviceDataType.substr(0, 16) === "esriImageService")) {
                             var title = (this.map.getLayer(this.map.layerIds[a])).arcgisProps ? (this.map.getLayer(this.map.layerIds[a])).arcgisProps.title : "";
+                            //console.log("title inside loop = "+"  "+title);
                             this.label = this.map.getLayer(this.map.layerIds[a]).url.split('//')[1];
-                            //console.log(title + " Datefield= " +this.layerInfos[this.label].dateField);
                             var layer = this.map.getLayer(this.map.layerIds[a]);
                             var point = this.map.extent.getCenter();
                             var mosaicRule = layer.mosaicRule ? layer.mosaicRule : "";
                             var dtField = this.layerInfos[this.label].dateField;
-                            var request = this.getSamples(layer, point, mosaicRule,dtField);
-                            request.then(lang.hitch(this, function (result) {
-                            if (result.samples.length > 0) {
-                                var RstprimaryDate = result.samples[0].attributes[dtField];
-                                this.primaryDate = locale.format(new Date(RstprimaryDate), {selector: "date", formatLength: "long"});
-                                //console.log(title);
-                                //console.log(this.primaryDate);
-                                sringVal = "<br/>"+title+"<br/>"+this.primaryDate;
-                                html.set(this.primaryName,sringVal);
-                                }}));
-					}}}},
+							this.getResults(title,layer, point, mosaicRule,dtField);
+                    }
+                    }}
+                    },
                 onOpen: function () {
                     if (this.map.layerIds) {
-                        this.changeDateRange();
+                        this.clearDateRange();
+                        this.setPrimaryLayer();
                     }
                 },
                 clearDateRange: function () {
+                    this.rstVar = '';
                     html.set(this.primaryName, '');
                 },
-		getSamples: function (layer, point, mosaicRule, dateField) {
-		    return new esriRequest({
+        getSamples: function (layer, point, mosaicRule, dateField) {
+            return new esriRequest({
                         url: layer.url + "/getSamples",
                         content: {
                             f: "json",
@@ -143,7 +158,7 @@ define([
                         handleAs: "json",
                         callbackParamName: "callback"
                     });
-		},
+        },
                 primarydate: function ()
                 {
                     if (this.dateField) {
@@ -169,58 +184,58 @@ define([
                                         }
                                     }));
                                 } else {
-				    var dateString = locale.format(new Date(primaryDate), {selector: "date", formatLength: "long"});
-				    //console.log(dateString);
-				    if (dateString !== "December 31, 1969" && dateString !== "January 1, 1970") {
-					html.set(this.primaryDate, dateString);
-				    }
-				    else {
-					html.set(this.primaryDate, "");
-				    }
+                    var dateString = locale.format(new Date(primaryDate), {selector: "date", formatLength: "long"});
+                    //console.log(dateString);
+                    if (dateString !== "December 31, 1969" && dateString !== "January 1, 1970") {
+                    html.set(this.primaryDate, dateString);
+                    }
+                    else {
+                    html.set(this.primaryDate, "");
+                    }
                                 }
                             } else {
                                 html.set(this.primaryDate, "");
-			    }
+                }
                         }), lang.hitch(this, function (error) {
                             html.set(this.primaryDate, "");
-			    //console.warn("Primary date not found");
-			    let searching = true;
-			    for (var a = this.map.layerIds.length - 1; a >= 0 && searching; a--) {
-				var layerObject = this.map.getLayer(this.map.layerIds[a]);
-				var title = layerObject.arcgisProps && layerObject.arcgisProps.title ? layerObject.arcgisProps.title : layerObject.title;
-				if (layerObject &&
-				    layerObject.visible &&
-				    layerObject.serviceDataType &&
-				    layerObject.serviceDataType.substr(0, 16) === "esriImageService"
-				    && layerObject.id !== "resultLayer"
-				    && layerObject.id !== "scatterResultLayer"
-				    && layerObject.id !== this.map.resultLayer
-				    && (!title || ((title).charAt(title.length - 1)) !== "_")) {
-				    //console.log(layerObject);
+                //console.warn("Primary date not found");
+                let searching = true;
+                for (var a = this.map.layerIds.length - 1; a >= 0 && searching; a--) {
+                var layerObject = this.map.getLayer(this.map.layerIds[a]);
+                var title = layerObject.arcgisProps && layerObject.arcgisProps.title ? layerObject.arcgisProps.title : layerObject.title;
+                if (layerObject &&
+                    layerObject.visible &&
+                    layerObject.serviceDataType &&
+                    layerObject.serviceDataType.substr(0, 16) === "esriImageService"
+                    && layerObject.id !== "resultLayer"
+                    && layerObject.id !== "scatterResultLayer"
+                    && layerObject.id !== this.map.resultLayer
+                    && (!title || ((title).charAt(title.length - 1)) !== "_")) {
+                    //console.log(layerObject);
 
-				    // Query the current layer for a date
-				    var layer = layerObject;
-				    var point = this.map.extent.getCenter();
-				    var mosaicRule = layer.mosaicRule ? layer.mosaicRule : "";
-				    var request = this.getSamples(layer, point, mosaicRule, this.dateField);
-				    request.then(lang.hitch(this, function (result) {
-					if (result.samples.length > 0) {
-					    var primaryDate = result.samples[0].attributes[this.dateField];
-					    var dateString = locale.format(new Date(primaryDate), {selector: "date", formatLength: "long"});
-					    //console.log(dateString);
-					    if (dateString !== "December 31, 1969" && dateString !== "January 1, 1970") {
-						html.set(this.primaryDate, dateString);
-						searching = false;
-					    }
-					}
-				    }),lang.hitch(this, function (error) {
-					html.set(this.primaryDate, '');
-				    }));
-				}
-			    }
-			    if (searching) {
-				html.set(this.primaryDate, '');
-			    }
+                    // Query the current layer for a date
+                    var layer = layerObject;
+                    var point = this.map.extent.getCenter();
+                    var mosaicRule = layer.mosaicRule ? layer.mosaicRule : "";
+                    var request = this.getSamples(layer, point, mosaicRule, this.dateField);
+                    request.then(lang.hitch(this, function (result) {
+                    if (result.samples.length > 0) {
+                        var primaryDate = result.samples[0].attributes[this.dateField];
+                        var dateString = locale.format(new Date(primaryDate), {selector: "date", formatLength: "long"});
+                        //console.log(dateString);
+                        if (dateString !== "December 31, 1969" && dateString !== "January 1, 1970") {
+                        html.set(this.primaryDate, dateString);
+                        searching = false;
+                        }
+                    }
+                    }),lang.hitch(this, function (error) {
+                    html.set(this.primaryDate, '');
+                    }));
+                }
+                }
+                if (searching) {
+                html.set(this.primaryDate, '');
+                }
 
                         }));
 
@@ -245,7 +260,7 @@ define([
                                     this.getSecondaryDateField();
                                 else {
                                     this.primarydate();
-				}
+                }
                             } else {
                                 var obj = {};
                                 if (this.primaryLayer.timeInfo && this.primaryLayer.timeInfo.startTimeField) {

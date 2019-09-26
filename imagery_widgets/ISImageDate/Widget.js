@@ -64,6 +64,14 @@ define([
                 },
                 getResults: function (title,layer, point, mosaicRule,dtField) {
 							//console.log("title inside function = "+"  "+title);
+							/*var lyrNameStr = "";
+							for (var a in this.map.layerIds) {
+								if (this.map.getLayer(this.map.layerIds[a]).visible) {
+									if (this.map.getLayer(this.map.layerIds[a]).type === 'ArcGISImageServiceLayer' || (this.map.getLayer(this.map.layerIds[a]).serviceDataType && this.map.getLayer(this.map.layerIds[a]).serviceDataType.substr(0, 16) === "esriImageService")) {
+										var title = (this.map.getLayer(this.map.layerIds[a])).arcgisProps ? (this.map.getLayer(this.map.layerIds[a])).arcgisProps.title : "";
+										kk = lyrNameStr;
+										lyrNameStr =  title+"$"+kk;
+							}}}	*/
                             var request = this.getSamples(layer, point, mosaicRule,dtField);
                             request.then(lang.hitch(this, function (result) {
                             if (result.samples.length > 0) {
@@ -73,9 +81,15 @@ define([
                                 pp = title+" Date : "+this.primaryDate+" <br/>";
 								if((this.rstVar).indexOf(pp) == -1){
 								if((this.rstVar).search(title) == -1){
-                                this.rstVar = this.rstVar+""+title+" Date : "+this.primaryDate+" <br/>";
-                                //console.log("witout this >>>>>"+this.rstVar);
+                                var kk = pp + this.rstVar;
+                                this.rstVar = kk;
+                                console.log("witout this >>>>>"+this.rstVar);
                                 html.set(this.primaryName,this.rstVar);
+								
+								/*this.rstVar = this.rstVar+""+title+" Date : "+this.primaryDate+" <br/>";
+                                //console.log("witout this >>>>>"+this.rstVar);
+                                html.set(this.primaryName,this.rstVar);*/
+								
                                 }else{
 									var left_text = (this.rstVar).indexOf(title+" Date : ");
 									console.log((this.rstVar)+" "+left_text+" "+Rt_text+" pp ="+pp);
